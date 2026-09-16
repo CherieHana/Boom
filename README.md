@@ -1,121 +1,101 @@
-# WhalePet —— 把小鲸鱼挂件搬到桌面
+# WhalePet
 
-把开源 DSH 插件 [dsh-whale-widget](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget)（MIT）
-的**本体**跑在桌面上：透明覆盖层里就是插件自己的界面，所以角色、音效、模块化泡泡、吸附翻转、
-多厂商余额/额度、Codex 统计这些功能与插件版本**完全一致**，插件更新时只需换插件文件重新打包，
-不需要移植任何功能。
+把 DSH 的小鲸鱼余额挂件搬到桌面上，做成一个独立小程序。
 
-> **第三方与免责**：挂件本体（`lib/`、`assets/`）与其中的角色图、音效等素材来自上述上游项目，
-> 版权归原作者及各自权利人所有，本项目只是按上游的 MIT 许可在构建时获取并打包。
-> 本项目是非官方工具，与 DeepSeek、DSH、Codex 官方无关；余额与用量数据只来自你自己填写的接口，
-> 所有配置与密钥都保存在本机。
+![WhalePet 截图](docs/screenshot.png)
 
-## 架构
+程序里跑的就是插件本体，所以插件有的功能它都有：导入自己的角色图和音效、模块化泡泡（文字 / 余额 / 今日 / 峰谷 / 图片动图）、吸附与翻转、点鲸鱼推进台词队列、多厂商余额与额度、Codex 用量统计、小鲸鱼记账。插件更新时，换掉插件文件重新打包即可，不用改外壳代码。
 
-```
-WhalePet.exe (PyInstaller 单文件, Python + PySide6)
-├─ 外壳（src/whalepet/）
-│   ├─ overlay.py  透明置顶覆盖层：QtWebEngine 加载假 DSH 页面，按挂件可见区域打遮罩实现鼠标穿透
-│   ├─ host.py     Node 宿主子进程管理 + 运行时解包 + 宿主 HTTP 客户端
-│   ├─ proxy.py    本地 OpenAI 兼容中转：抓 usage 合成 DSH 会话事件（每轮消耗/模型明细/额度）
-│   ├─ migrate.py  旧版 Qt 桌宠数据迁移（配置/账本/密钥 → 插件状态文件）
-│   ├─ wizard.py   首次运行向导（API Key / 中转开关与端口 / 连通性自检）
-│   └─ app.py      单实例、托盘、看门狗、生命周期
-├─ 宿主垫片（host/host.mjs）
-│   └─ 提供插件所需的 ctx 服务：webServer.register/tapIndex、credentials、connection、
-│      on('session/event')、effect、get；并对外提供假 DSH 页面与 /__host/* 接口
-└─ payload.zip：node.exe + 插件本体（lib/index.js、assets/whale-widget.js、素材）
-```
+## 下载
 
-`vendor/dsh-whale-widget/`（插件本体）**不入库**，构建前用 `scripts\sync-plugin.ps1` 从上游拉取。
+到 [Releases](https://github.com/CherieHana/Boom/releases) 下载 `WhalePet-1.0.0.zip`，解压后双击 `WhalePet.exe`。不用装 Python、Node 或 Qt。
 
-关键设计（都来自阶段 0 的可行性验证）：
+系统要求是 64 位 Windows 10 1809+ 或 Windows 11。第一次启动要解压内置运行时，大概 5～10 秒，之后每次约 5 秒。
 
-- 插件入口自检要求 `#root` 里有 `textarea`，宿主页面用一个 1px 隐形输入框满足它；
-- 挂件用角色图的 **alpha 通道**判定点击命中，透明处故意穿透，所以遮罩只圈"挂件本体 + 展开的面板"，
-  其余屏幕区域点击照常落到桌面；
-- QtWebEngine 回传 JS 对象不可靠，统一 `JSON.stringify` 成字符串再解析；
-- 每轮消耗没有 DSH 会话事件，靠本地中转在响应 `usage` 上合成事件喂给插件。
+## 用法
 
-## 构建
+- 首次启动会让你填 DeepSeek API Key，只保存在本机（`%APPDATA%\WhalePet`），不会上传。
+- 点小鲸鱼弹泡泡，右键或右上角那个按钮打开设置面板。角色、音效、泡泡内容、吸附方式、记账都在面板里改。
+- 想让别的客户端的用量也出现在「每轮消耗」里，把那个客户端的 `base_url` 指到 `http://127.0.0.1:11434/v1`。端口可以在托盘菜单的「设置」里改。
+- 想把整个文件夹拷到别的电脑继续用，就在 exe 旁边放一个空的 `portable.flag`，数据会存进同级的 `WhalePetData\`。
+
+## 常见问题
+
+| 现象 | 原因与处理 |
+| --- | --- |
+| 启动慢 | 单文件每次启动都要把内置运行时解压到临时目录，这是打包方式的代价。想更快可以自己用 `pyinstaller --onedir` 打成文件夹版 |
+| 杀软报毒 | PyInstaller 加内嵌 Node 的组合常被误报，加白名单即可。源码与构建脚本都在这个仓库里，可以自己复核后再打包 |
+| 余额显示为空 | 先确认 Key 有效；面板里的「测试连通性」会把接口返回的错误显示出来 |
+| 多显示器 | 覆盖层目前只铺主显示器，多屏还没做 |
+
+## 它是怎么工作的
+
+- exe 里带一个 Node 进程跑插件本体（`vendor/dsh-whale-widget/lib/index.js`），QtWebEngine 在透明置顶窗口里加载挂件页面。
+- 窗口按挂件「当前可见的区域」设置遮罩，于是鲸鱼和展开的面板可以点，其余位置点击直接落到桌面。
+- 插件需要三个宿主服务（`webServer`、`credentials`、`connection`）和会话事件，这些由 `host/host.mjs` 提供；它同时对外提供假 DSH 页面和 `/__host/*` 接口。
+- 桌面版没有 DSH 的会话事件，「每轮消耗」由内置的本地中转从 API 响应的 `usage` 里合成事件喂给插件。
+
+具体实现和取舍都写在 `src/whalepet/` 的注释里。
+
+## 从源码构建
 
 ```powershell
-.\scripts\sync-plugin.ps1     # 从上游拉取插件本体到 vendor\dsh-whale-widget（插件不入库）
-.\scripts\fetch_node.ps1      # 首次：下载 Node LTS 到 runtime\node\node.exe（国内镜像）
-.\build.ps1                   # 生成 build\payload.zip + 图标 + dist\WhalePet.exe
+.\scripts\sync-plugin.ps1     # 拉取插件本体到 vendor\dsh-whale-widget（插件不入库）
+.\scripts\fetch_node.ps1      # 下载 Node LTS 到 runtime\node\node.exe（走国内镜像）
+.\build.ps1                   # 生成 payload.zip、图标与 dist\WhalePet.exe
 .\build-dist.ps1              # 构建 + 分发校验 + dist\WhalePet-<版本>.zip
 ```
 
-调试与测试：
+调试和测试：
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest tests -q      # 单元 + 宿主集成测试（需要 node）
+.\.venv\Scripts\python.exe -m pytest tests -q      # 单元测试 + 宿主集成测试（需要 node）
 .\.venv\Scripts\python.exe scripts\smoke_app.py    # 源码态端到端冒烟
 $env:WHALE_PET_SELFCHECK=1
-.\.venv\Scripts\python.exe scripts\smoke_exe.py    # 打包产物冒烟（含"挂件是否真的渲染"自检）
+.\.venv\Scripts\python.exe scripts\smoke_exe.py    # 打包产物冒烟，含「挂件是否真的渲染」自检
 ```
 
-阶段 0 的验证脚本保留在 `scripts\spike_widget.py`（插件脱离 DSH 能否运行）与
-`scripts\spike_overlay.py`（透明覆盖层 + 鼠标穿透是否可用）。
+想换 README 里的截图，跑 `scripts\make_screenshot.py`，它会用无头浏览器渲染一张干净的图。
 
-## 插件升级（以后只做这一步）
+## 插件升级
 
 ```powershell
-.\scripts\sync-plugin.ps1                 # 拉取上游最新插件覆盖 vendor\dsh-whale-widget
-# 同步 src\whalepet\__init__.py 里的 PLUGIN_VERSION
-.\build-dist.ps1
+.\scripts\sync-plugin.ps1     # 拉上游最新插件，覆盖 vendor\dsh-whale-widget
+# 改 src\whalepet\__init__.py 里的 PLUGIN_VERSION
+.\build-dist.ps1              # 重新打包
 ```
 
-`payload.zip` 里带的是插件本体，外壳只按"壳层契约"（ctx 服务 + `assistant/message` 事件 +
-`/dsh-whale/*` 路由）与它对接；插件新增路由/字段通常无需改外壳代码。
+外壳只按三件事跟插件对接：要提供的 ctx 服务、`assistant/message` 会话事件、插件自己注册的 `/dsh-whale/*` 路由。插件加路由或加字段一般不用动外壳代码，改完跑一遍测试就知道。
 
 ## 数据目录
 
-| 模式 | 触发条件 | 位置 |
-| --- | --- | --- |
-| 默认 | —— | `%APPDATA%\WhalePet\` |
-| 便携 | exe 同目录存在 `portable.flag` 或 `config.json` | `exe同级\WhalePetData\` |
-| 调试 | 环境变量 `WHALE_PET_DATA` | 指定目录 |
+| 情况 | 位置 |
+| --- | --- |
+| 默认 | `%APPDATA%\WhalePet\` |
+| exe 同级有 `portable.flag` 或 `config.json` | `exe同级\WhalePetData\` |
+| 设了环境变量 `WHALE_PET_DATA` | 指定的目录 |
 
-目录内容：`config.json`（外壳配置）、`dsh-home\`（插件自己的状态：`.dshw-size.json`、
-`.dshw-usage.json`、`credentials.json`、`whale-roles\`、`whale-audio\`…）、`runtime\<版本戳>\`
-（解包后的 node + 插件）、`webengine\`（QtWebEngine 持久化配置，挂件位置等）、`logs\`。
+目录里有：`config.json`（外壳配置）、`dsh-home\`（插件自己的状态，包括 `.dshw-size.json`、`.dshw-usage.json`、`credentials.json`、`whale-roles\`、`whale-audio\`）、`runtime\<版本戳>\`（解包后的 Node 与插件）、`webengine\`（挂件位置等持久化数据）、`logs\`。
 
-## 从旧版桌宠（pet 包）升级
+## 从旧的 Qt 版桌宠迁移
 
-旧版的 `config.json` / `ledger.json` / `phrases.json` 与新版同目录。首次启动时：
+旧版的 `config.json`、`ledger.json`、`phrases.json` 和新版在同一个目录，首次启动时程序会：
 
-1. 三个文件各备份一份 `*.pre-v030.bak`；
-2. 旧配置键（api_key、proxy_*、scale、volume、sound_set、peak_mode、usage_mode、预警阈值…）
-   合并进新配置，并写成插件的 `.dshw-size.json`；
-3. 旧账本（`history` 是 `{day: {usage, models}}`）转换成插件的 `.dshw-usage.json`
-   （`{day: number}` + `dayStart` / `lastBalance`），保证"今日已用 / 近 7 天"不归零；
-4. api_key 写入插件密钥库 `DEEPSEEK_API_KEY`。
+1. 把这三个文件各备份一份为 `*.pre-v030.bak`；
+2. 把旧配置里的键（api_key、proxy_*、scale、volume、sound_set、peak_mode、usage_mode、预警阈值等）合并进新配置，并写成插件的 `.dshw-size.json`；
+3. 把旧账本的 `history`（`{day: {usage, models}}`）转成插件要的格式，保证「今日已用 / 近 7 天」不归零；
+4. 把 api_key 写进插件密钥库的 `DEEPSEEK_API_KEY`。
 
-迁移只跑一次、只增不删；旧版 exe 保留备份，随时可回退。
+迁移只跑一次，只增不删。旧版 exe 建议留着，随时能回退。
 
-## 分发
+## 发布成品
 
-`build-dist.ps1` 产出的 zip 里是 `WhalePet.exe` + 使用说明 + README + 插件 MIT 许可。
-打包前后会做校验（`scripts/verify_dist.py`）：
+`build-dist.ps1` 产出的 zip 里有 `WhalePet.exe`、使用说明、README 和插件的 MIT 许可。打包前 `scripts\verify_dist.py` 会检查产物里没有 `sk-` 形式的密钥、没有你本机在用的 API Key、没有本机用户名，`payload.zip` 里也没有任何个人数据。
 
-- 产物中不含 `sk-` 形式的密钥、不含你本机正在用的 API Key、不含本机用户名；
-- `payload.zip` 只含 `node/node.exe`、`host.mjs`、插件本体，不含任何个人数据/密钥文件。
+可执行文件通过 GitHub Release 分发，仓库里只放代码。对方拿到 zip 解压就能跑，API Key 和账本都由对方自己产生。
 
-对方拿到 exe 双击即可运行（64 位 Windows 10 1809+ / 11），不需要 Python/Node/Qt；
-API Key、账本等数据都由对方自己产生，不随包分发。
+## 许可与致谢
 
-## 已知限制
-
-- 单文件打包每次启动要解压运行时，首次约 5~10 秒、之后约 5 秒；想更快可自己用
-  `pyinstaller --onedir` 打包成文件夹版。
-- 只用主显示器作为覆盖层（多屏未做）。
-- 个别杀软会对"PyInstaller + 内嵌 Node"误报，加白名单即可。
-- 任务结束音等由轮询触发的声音依赖 WebEngine 的自动播放策略，程序已用
-  `--autoplay-policy=no-user-gesture-required` 放开。
-
-## 许可
-
-- 本仓库的外壳代码（`src/`、`host/`、`scripts/`、构建脚本）：MIT，见 `LICENSE`。
-- 挂件本体与素材：来自 [MeteorNOX/DeepSeek-Balance-Whale-Widget](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget)（MIT），
-  构建时通过 `scripts\sync-plugin.ps1` 获取，不随本仓库分发；角色图、音效等素材的版权归原作者及各自权利人所有。
+- 这个仓库的代码（`src/`、`host/`、`scripts/`、构建脚本）是 MIT，见 `LICENSE`。
+- 挂件本体与角色图、音效等素材来自 [MeteorNOX/DeepSeek-Balance-Whale-Widget](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget)（MIT），由 `scripts\sync-plugin.ps1` 在构建时获取，不随仓库分发。素材版权归原作者及各自权利人。
+- 本项目是个人作品，与 DeepSeek、DSH、Codex 官方无关；余额和用量只走你自己填写的接口，配置与密钥都留在本机。
