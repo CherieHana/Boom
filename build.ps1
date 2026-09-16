@@ -15,7 +15,8 @@ Write-Host "==> 项目目录：$Root"
 if (-not (Test-Path $Python)) {
     Write-Host '==> 创建虚拟环境 .venv'
     $base = (Get-Command python -ErrorAction SilentlyContinue).Source
-    if (-not $base) { $base = 'D:\python\python.exe' }
+    if (-not $base) { $base = (Get-Command py -ErrorAction SilentlyContinue).Source }
+    if (-not $base) { throw '需要 Python 3.12+ 来创建构建环境：请先安装 Python 并确保 python 在 PATH 里' }
     & $base -m venv (Join-Path $Root '.venv')
 }
 

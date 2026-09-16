@@ -93,6 +93,7 @@ def resolve_runtime() -> tuple[Path, Path, Path]:
     plugin = target / "plugin"
     host_js = target / "host.mjs"
     if node.exists() and (plugin / "lib" / "index.js").exists() and host_js.exists():
+        _prune_runtime_dirs(target)
         return node, plugin, host_js
 
     payload = bundled_payload()

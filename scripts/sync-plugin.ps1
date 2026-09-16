@@ -29,7 +29,15 @@ foreach ($url in $urls) {
 }
 if (-not $ok) { throw '插件下载失败' }
 
-& (Join-Path $Root '.venv\Scripts\python.exe') (Join-Path $Root 'scripts\extract_plugin.py') $tarball $Vendor
+# 解包只用标准库，任何 Python 3.8+ 都行：优先仓库 venv，其次系统 python
+$python = Join-Path $Root '.venv\Scripts\python.exe'
+if (-not (Test-Path $python)) {
+    $found = (Get-Command python -ErrorAction SilentlyContinue).Source
+    if (-not $found) { $found = (Get-Command py -ErrorAction SilentlyContinue).Source }
+    if (-not $found) { throw '需要 Python 3.8+ 解包插件：请先装 Python，或先跑 build.ps1 创建 .venv' }
+    $python = $found
+}
+& $python (Join-Path $Root 'scripts\extract_plugin.py') $tarball $Vendor
 $pkg = Get-Content (Join-Path $Vendor 'package.json') -Raw | ConvertFrom-Json
 Write-Host "==> 当前插件版本：$($pkg.version)"
 Write-Host '==> 记得同步 src\whalepet\__init__.py 的 PLUGIN_VERSION，再重跑 build.ps1 / build-dist.ps1'
