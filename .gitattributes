@@ -1,0 +1,19 @@
+# 统一换行符，避免 Windows 上反复出现 LF/CRLF 噪音
+* text=auto
+*.py text eol=lf
+*.mjs text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.yml text eol=lf
+*.ps1 text eol=crlf
+
+# 二进制
+*.png binary
+*.ico binary
+*.gif binary
+*.mp3 binary
+*.wav binary
+*.exe binary
+*.zip binary
