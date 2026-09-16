@@ -1,0 +1,27 @@
+# 构建产物与本地环境
+.venv/
+build/
+dist/
+runtime/
+*.spec.bak
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# 可执行文件与日志（要发布走 GitHub Release，不进仓库）
+*.exe
+*.log
+WhalePet-crash.log
+
+# 图标/窗口素材：从插件复制出来的构建产物（第三方素材，不入库）
+assets/
+
+# 插件本体：不入库，构建前用 scripts\sync-plugin.ps1 从上游拉取（见 README）
+vendor/dsh-whale-widget/
+
+# 个人数据（正常不会出现在仓库里，防手滑）
+WhalePetData/
+config.json
+ledger.json
+phrases.json
+credentials.json

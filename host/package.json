@@ -1,0 +1,8 @@
+{
+  "name": "whalepet-host",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "WhalePet 的 DSH 宿主垫片：把 dsh-whale-widget 插件跑在独立 Node 进程里",
+  "main": "host.mjs"
+}
