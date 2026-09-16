@@ -119,4 +119,3 @@ API Key、账本等数据都由对方自己产生，不随包分发。
 - 本仓库的外壳代码（`src/`、`host/`、`scripts/`、构建脚本）：MIT，见 `LICENSE`。
 - 挂件本体与素材：来自 [MeteorNOX/DeepSeek-Balance-Whale-Widget](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget)（MIT），
   构建时通过 `scripts\sync-plugin.ps1` 获取，不随本仓库分发；角色图、音效等素材的版权归原作者及各自权利人所有。
-- 发布成品（exe）请放在 GitHub Release，不要提交进仓库；仓库体积与版权都更干净。
