@@ -88,7 +88,7 @@ def main() -> int:
     try:
         with sync_playwright() as pw:
             browser = pw.chromium.launch(channel="msedge", headless=True)
-            page = browser.new_page(viewport={"width": 860, "height": 780}, device_scale_factor=2)
+            page = browser.new_page(viewport={"width": 1180, "height": 900}, device_scale_factor=2)
             page.goto(f"http://127.0.0.1:{port}/", wait_until="load")
             page.wait_for_selector(".dshwv-root", timeout=15000)
             page.add_style_tag(content=BACKDROP)
@@ -97,9 +97,26 @@ def main() -> int:
                 " document.body.appendChild(d); }",
                 NOTE,
             )
+            # 先把鲸鱼拖到画面中间：面板比鲸鱼宽，贴着屏幕角会把面板顶出画外
+            img = page.locator(".dshwv-img").bounding_box()
+            if img:
+                cx = img["x"] + img["width"] / 2
+                cy = img["y"] + img["height"] * 0.7
+                page.mouse.move(cx, cy)
+                page.mouse.down()
+                page.mouse.move(cx - 470, cy - 230, steps=15)
+                page.mouse.up()
+                page.wait_for_timeout(900)
             # 打开设置面板（比泡泡更能体现功能）
             page.evaluate("document.querySelector('.dshwv-menu-btn').click()")
             page.wait_for_timeout(1200)
+            geometry = page.evaluate(
+                "(() => { const m = document.querySelector('.dshwv-menu');"
+                " const b = m ? m.getBoundingClientRect() : null;"
+                " return JSON.stringify({menu: b ? [Math.round(b.left), Math.round(b.top), Math.round(b.right), Math.round(b.bottom)] : null,"
+                " vw: innerWidth, vh: innerHeight}); })()"
+            )
+            print("布局:", geometry)
             page.screenshot(path=str(OUT))
             browser.close()
     finally:
