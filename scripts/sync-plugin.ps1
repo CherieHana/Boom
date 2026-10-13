@@ -1,4 +1,6 @@
-# 用上游仓库最新插件替换 vendor\dsh-whale-widget（以后升级插件只需跑这个再重新构建）。
+# 用上游插件替换 vendor\dsh-whale-widget（以后升级插件只需跑这个再重新构建）。
+#   .\sync-plugin.ps1                 拉取 main 最新
+#   .\sync-plugin.ps1 -Ref v0.4.2     钉到某个 tag（推荐，构建可复现）
 param(
     [string]$Ref = 'main',
     [string]$Repo = 'MeteorNOX/DeepSeek-Balance-Whale-Widget'
@@ -13,8 +15,8 @@ $tarball = Join-Path $Temp 'plugin.tar.gz'
 $ProgressPreference = 'SilentlyContinue'
 
 $urls = @(
-    "https://ghfast.top/https://codeload.github.com/$Repo/tar.gz/refs/heads/$Ref",
-    "https://codeload.github.com/$Repo/tar.gz/refs/heads/$Ref"
+    "https://ghfast.top/https://codeload.github.com/$Repo/tar.gz/$Ref",
+    "https://codeload.github.com/$Repo/tar.gz/$Ref"
 )
 $ok = $false
 foreach ($url in $urls) {

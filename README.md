@@ -90,12 +90,13 @@ $env:WHALE_PET_SELFCHECK=1
 
 ## 发布成品
 
-`build-dist.ps1` 产出的 zip 里有 `WhalePet.exe`、使用说明、README 和插件的 MIT 许可。打包前 `scripts\verify_dist.py` 会检查产物里没有 `sk-` 形式的密钥、没有你本机在用的 API Key、没有本机用户名，`payload.zip` 里也没有任何个人数据。
+`build-dist.ps1` 产出的 zip 里有 `WhalePet.exe`、使用说明、README，以及插件的 MIT 许可与素材来源说明（`PROVENANCE.md`）。打包前 `scripts\verify_dist.py` 会检查产物里没有 `sk-` 形式的密钥、没有你本机在用的 API Key、没有本机用户名，`payload.zip` 里也没有任何个人数据。
 
 可执行文件通过 GitHub Release 分发，仓库里只放代码。对方拿到 zip 解压就能跑，API Key 和账本都由对方自己产生。
 
 ## 许可与致谢
 
 - 这个仓库的代码（`src/`、`host/`、`scripts/`、构建脚本）是 MIT，见 `LICENSE`。
-- 挂件本体与角色图、音效等素材来自 [MeteorNOX/DeepSeek-Balance-Whale-Widget](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget)（MIT），由 `scripts\sync-plugin.ps1` 在构建时获取，不随仓库分发。素材版权归原作者及各自权利人。
+- 挂件本体的代码来自 [MeteorNOX/DeepSeek-Balance-Whale-Widget](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget)（MIT），由 `scripts\sync-plugin.ps1` 在构建时获取，不随这个仓库分发。
+- `assets/` 里的角色图、动图、音效**不在 MIT 范围内**。上游在 `PROVENANCE.md` 里写明这些素材按原样随插件分发、不授予再许可；本项目同样只做原样打包，版权归原作者及各自权利人，分发包里也带上了这份说明。
 - 本项目是个人作品，与 DeepSeek、DSH、Codex 官方无关；余额和用量只走你自己填写的接口，配置与密钥都留在本机。

@@ -30,6 +30,10 @@ Copy-Item $exe (Join-Path $staging 'WhalePet.exe')
 Copy-Item (Join-Path $Root 'README.md') (Join-Path $staging 'README.md')
 Copy-Item (Join-Path $Root 'scripts\quickstart.txt') (Join-Path $staging '使用说明.txt')
 Copy-Item (Join-Path $Root 'vendor\dsh-whale-widget\LICENSE') (Join-Path $staging 'LICENSE-dsh-whale-widget.txt')
+$provenance = Join-Path $Root 'vendor\dsh-whale-widget\PROVENANCE.md'
+if (Test-Path $provenance) {
+    Copy-Item $provenance (Join-Path $staging 'PROVENANCE-dsh-whale-widget.md')
+}
 
 $zip = Join-Path $DistDir "WhalePet-$version.zip"
 if (Test-Path $zip) { Remove-Item $zip -Force }
@@ -37,4 +41,4 @@ Compress-Archive -Path (Join-Path $staging '*') -DestinationPath $zip -Compressi
 
 $size = [math]::Round((Get-Item $zip).Length / 1MB, 1)
 Write-Host "==> 分发包：$zip（$size MB）"
-Write-Host '    内容：WhalePet.exe / 使用说明.txt / README.md / LICENSE-dsh-whale-widget.txt'
+Write-Host '    内容：WhalePet.exe / 使用说明.txt / README.md / LICENSE-dsh-whale-widget.txt / PROVENANCE-dsh-whale-widget.md'

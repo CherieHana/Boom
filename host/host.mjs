@@ -122,6 +122,22 @@ const ctx = {
     if (name === 'webServer') return ctx.webServer
     return undefined
   },
+  // 0.4.x 起插件不再用对象级 inject，改成 root.inject(deps, cb)：等齐依赖服务后回调。
+  // 这个宿主的三个服务一直都在，直接回调即可。
+  inject(deps, fn) {
+    const list = Array.isArray(deps) ? deps : [deps]
+    const missing = list.filter((name) => !ctx.get(name))
+    if (missing.length) {
+      log(`inject 缺少服务：${missing.join(', ')}（插件这部分逻辑不会启动）`)
+      return () => {}
+    }
+    try {
+      fn(ctx)
+    } catch (err) {
+      console.error('[host] inject 回调抛错：', (err && err.stack) || err)
+    }
+    return () => {}
+  },
   on(event, fn) {
     if (typeof fn !== 'function') throw new Error('bad listener')
     if (!listeners.has(event)) listeners.set(event, [])
@@ -213,6 +229,26 @@ const INDEX_HTML = `<!doctype html>
 
 function renderIndex() {
   let html = INDEX_HTML
+  // ① 结构化注入行：0.4.x 起的桌面通道（插件订阅 webserver/index-inject 往表里推行）
+  const table = []
+  ctx.emit('webserver/index-inject', table)
+  for (const row of table) {
+    if (!row || typeof row !== 'object') continue
+    let tag = ''
+    if (row.kind === 'script-src' && typeof row.src === 'string') {
+      tag = `<script src="${row.src}"></script>`
+    } else if (row.kind === 'script' && typeof row.text === 'string') {
+      tag = `<script>${row.text}</script>`
+    } else if (typeof row.html === 'string') {
+      tag = row.html
+    }
+    if (!tag) continue
+    // 与 tapIndex 那条路去重：同一个小鲸鱼脚本只注入一次
+    if (html.indexOf('/dsh-whale/widget.js') !== -1 && tag.indexOf('/dsh-whale/widget.js') !== -1) continue
+    if (html.indexOf(tag) !== -1) continue
+    html = html.indexOf('</body>') !== -1 ? html.replace('</body>', tag + '</body>') : html + tag
+  }
+  // ② tapIndex 变换（web 形态，两条并存、各自去重）
   for (const tap of indexTaps) {
     try {
       const out = tap(html)

@@ -14,7 +14,7 @@ __all__ = [
 ]
 
 APP_NAME = "WhalePet"
-APP_VERSION = "1.0.0"
-SHELL_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
+SHELL_VERSION = "1.0.1"
 # 随包内置的插件版本（换插件时改这里，构建脚本会用它做运行时缓存戳）
-PLUGIN_VERSION = "0.3.2"
+PLUGIN_VERSION = "0.4.2"

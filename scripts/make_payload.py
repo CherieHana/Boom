@@ -12,7 +12,22 @@ PLUGIN = ROOT / "vendor" / "dsh-whale-widget"
 NODE = ROOT / "runtime" / "node" / "node.exe"
 HOST = ROOT / "host" / "host.mjs"
 
-INCLUDE_PLUGIN = ["lib", "assets", "package.json", "cordis.patch.yml", "LICENSE", "README.md"]
+# 兜底清单：读不到 package.json 的 files 时用它
+FALLBACK_INCLUDE = ["lib", "assets", "package.json", "cordis.patch.yml", "LICENSE", "README.md", "PROVENANCE.md"]
+
+
+def plugin_files() -> list[str]:
+    """按 package.json 的 files 白名单打包，避免上游新增文件（如 icon.png）被漏掉。"""
+    import json
+
+    declared: list[str] = []
+    try:
+        pkg = json.loads((PLUGIN / "package.json").read_text(encoding="utf-8"))
+        declared = [str(x) for x in (pkg.get("files") or []) if str(x).strip()]
+    except Exception:
+        declared = []
+    names = list(dict.fromkeys(declared + FALLBACK_INCLUDE))
+    return [name for name in names if (PLUGIN / name).exists()]
 
 
 def main() -> int:
@@ -27,7 +42,7 @@ def main() -> int:
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
         zf.write(NODE, "node/node.exe")
         zf.write(HOST, "host.mjs")
-        for item in INCLUDE_PLUGIN:
+        for item in plugin_files():
             source = PLUGIN / item
             if source.is_dir():
                 for file in sorted(source.rglob("*")):
